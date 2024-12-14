@@ -1,0 +1,10 @@
+{
+    "id": "cleanup",
+    "name": "Cleanup",
+    "version": "1.0.0",
+    "minAppVersion": "0.15.0",
+    "description": "Clean up your Obsidian vault from a convenient panel",
+    "author": "Jose Elias Alvarez",
+    "authorUrl": "https://github.com/jose-elias-alvarez",
+    "isDesktopOnly": false
+}
