@@ -28,10 +28,10 @@ export default class CleanupPluginConfirmDeleteModal extends Modal {
                 button
                     .setButtonText("Delete")
                     .setWarning()
-                    .onClick(async () => await this.delete())
+                    .onClick(async () => await this.delete()),
             )
             .addButton((button) =>
-                button.setButtonText("Cancel").onClick(() => this.close())
+                button.setButtonText("Cancel").onClick(() => this.close()),
             );
     }
 

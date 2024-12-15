@@ -75,7 +75,7 @@ export default class CleanupPluginPanel extends ItemView {
                 } else {
                     const list = container.createEl("ul");
                     emptyFiles.forEach((file) =>
-                        this.createFileLink(list.createEl("li"), file)
+                        this.createFileLink(list.createEl("li"), file),
                     );
                 }
 
@@ -87,7 +87,7 @@ export default class CleanupPluginPanel extends ItemView {
                 } else {
                     const list = container.createEl("ul");
                     orphanedFiles.forEach((file) =>
-                        this.createFileLink(list.createEl("li"), file)
+                        this.createFileLink(list.createEl("li"), file),
                     );
                 }
 
@@ -111,7 +111,10 @@ export default class CleanupPluginPanel extends ItemView {
                             });
                         const nestedList = listItem.createEl("ul");
                         files.forEach((file) =>
-                            this.createFileLink(nestedList.createEl("li"), file)
+                            this.createFileLink(
+                                nestedList.createEl("li"),
+                                file,
+                            ),
                         );
                     });
                 }
@@ -132,8 +135,8 @@ export default class CleanupPluginPanel extends ItemView {
                             .forEach((duplicate) =>
                                 this.createFileLink(
                                     nestedList.createEl("li"),
-                                    duplicate
-                                )
+                                    duplicate,
+                                ),
                             );
                     });
                 }

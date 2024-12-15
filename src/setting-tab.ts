@@ -20,7 +20,7 @@ export default class CleanupPluginSettingTab extends PluginSettingTab {
                     .onChange(async (value) => {
                         this.plugin.settings.confirmFileDeletion = value;
                         await this.plugin.saveSettings();
-                    })
+                    }),
             );
 
         new Setting(this.containerEl)
@@ -31,13 +31,13 @@ export default class CleanupPluginSettingTab extends PluginSettingTab {
                     .onChange(async (value) => {
                         this.plugin.settings.autoRefresh = value;
                         await this.plugin.saveSettings();
-                    })
+                    }),
             );
 
         new Setting(this.containerEl)
             .setName("Exclude regular expressions")
             .setDesc(
-                "Exclude files matching the provided regular expression(s) from the corresponding section of the cleanup panel."
+                "Exclude files matching the provided regular expression(s) from the corresponding section of the cleanup panel.",
             )
             .setHeading();
 
@@ -47,7 +47,7 @@ export default class CleanupPluginSettingTab extends PluginSettingTab {
                 .onChange(async (value) => {
                     this.plugin.settings.emptyFilesExcludeRegex = value;
                     await this.plugin.saveSettings();
-                })
+                }),
         );
         new Setting(this.containerEl)
             .setName("Orphaned files")
@@ -57,7 +57,7 @@ export default class CleanupPluginSettingTab extends PluginSettingTab {
                     .onChange(async (value) => {
                         this.plugin.settings.orphanedFilesExcludeRegex = value;
                         await this.plugin.saveSettings();
-                    })
+                    }),
             );
         new Setting(this.containerEl).setName("Broken links").addText((text) =>
             text
@@ -65,7 +65,7 @@ export default class CleanupPluginSettingTab extends PluginSettingTab {
                 .onChange(async (value) => {
                     this.plugin.settings.brokenLinksExcludeRegex = value;
                     await this.plugin.saveSettings();
-                })
+                }),
         );
         new Setting(this.containerEl)
             .setName("Duplicate files")
@@ -75,7 +75,7 @@ export default class CleanupPluginSettingTab extends PluginSettingTab {
                     .onChange(async (value) => {
                         this.plugin.settings.duplicateFilesExcludeRegex = value;
                         await this.plugin.saveSettings();
-                    })
+                    }),
             );
     }
 }

@@ -40,16 +40,16 @@ export default class CleanupPlugin extends Plugin {
         const duplicates: Map<number, TFile[]> = new Map();
 
         const orphanedFileMatcher = this.createMatcher(
-            this.settings.orphanedFilesExcludeRegex
+            this.settings.orphanedFilesExcludeRegex,
         );
         const emptyFileMatcher = this.createMatcher(
-            this.settings.emptyFilesExcludeRegex
+            this.settings.emptyFilesExcludeRegex,
         );
         const brokenLinkMatcher = this.createMatcher(
-            this.settings.brokenLinksExcludeRegex
+            this.settings.brokenLinksExcludeRegex,
         );
         const duplicateFileMatcher = this.createMatcher(
-            this.settings.duplicateFilesExcludeRegex
+            this.settings.duplicateFilesExcludeRegex,
         );
 
         await Promise.all(
@@ -74,12 +74,12 @@ export default class CleanupPlugin extends Plugin {
 
                 if (!brokenLinkMatcher(file.path))
                     Object.keys(
-                        this.app.metadataCache.unresolvedLinks[file.path] || {}
+                        this.app.metadataCache.unresolvedLinks[file.path] || {},
                     ).forEach((link) =>
                         brokenLinks.set(link, [
                             ...(brokenLinks.get(link) || []),
                             file,
-                        ])
+                        ]),
                     );
 
                 if (
@@ -90,7 +90,7 @@ export default class CleanupPlugin extends Plugin {
                         ...(duplicates.get(contentHash) || []),
                         file,
                     ]);
-            })
+            }),
         );
         return {
             emptyFiles,
@@ -98,7 +98,7 @@ export default class CleanupPlugin extends Plugin {
             brokenLinks,
             // transform before returning, since we no longer care about the hash
             duplicates: Array.from(duplicates.values()).filter(
-                (d) => d.length > 1
+                (d) => d.length > 1,
             ),
         };
     }
@@ -110,14 +110,14 @@ export default class CleanupPlugin extends Plugin {
                 .map(
                     (leaf) =>
                         leaf.view instanceof CleanupPluginPanel &&
-                        leaf.view.onOpen()
-                )
+                        leaf.view.onOpen(),
+                ),
         );
     }
 
     async activatePanel() {
         const leaves = this.app.workspace.getLeavesOfType(
-            CleanupPlugin.viewType
+            CleanupPlugin.viewType,
         );
         if (leaves.length > 0) {
             leaves.forEach((leaf) => this.app.workspace.revealLeaf(leaf));
@@ -138,7 +138,7 @@ export default class CleanupPlugin extends Plugin {
 
         this.registerView(
             CleanupPlugin.viewType,
-            (leaf) => new CleanupPluginPanel(leaf, this)
+            (leaf) => new CleanupPluginPanel(leaf, this),
         );
 
         this.addCommand({
@@ -149,7 +149,7 @@ export default class CleanupPlugin extends Plugin {
         this.addRibbonIcon(
             CleanupPlugin.icon,
             CleanupPlugin.openPanelName,
-            async () => await this.activatePanel()
+            async () => await this.activatePanel(),
         );
 
         this.registerEvent(
@@ -160,7 +160,7 @@ export default class CleanupPlugin extends Plugin {
                 ) {
                     await leaf.view.onOpen();
                 }
-            })
+            }),
         );
 
         this.addSettingTab(new CleanupPluginSettingTab(this.app, this));
@@ -170,7 +170,7 @@ export default class CleanupPlugin extends Plugin {
         this.settings = Object.assign(
             {},
             DEFAULT_SETTINGS,
-            await this.loadData()
+            await this.loadData(),
         );
     }
 
