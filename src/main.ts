@@ -1,4 +1,4 @@
-import { Plugin, TFile } from "obsidian";
+import { debounce, Plugin, TFile } from "obsidian";
 import CleanupPluginPanel from "./panel";
 import CleanupPluginSettingTab from "./setting-tab";
 import { CleanupPluginSettings, DEFAULT_SETTINGS } from "./settings";
@@ -33,64 +33,92 @@ export default class CleanupPlugin extends Plugin {
         orphanedFiles: TFile[];
         brokenLinks: Map<string, TFile[]>;
         duplicates: TFile[][];
+        untaggedFiles: TFile[];
     }> {
         const emptyFiles: TFile[] = [];
         const orphanedFiles: TFile[] = [];
         const brokenLinks: Map<string, TFile[]> = new Map();
         const duplicates: Map<number, TFile[]> = new Map();
+        const untaggedFiles: TFile[] = [];
 
         const orphanedFileMatcher = this.createMatcher(
-            this.settings.orphanedFilesExcludeRegex,
+            this.settings.orphanedFiles.ignoreRegex,
         );
         const emptyFileMatcher = this.createMatcher(
-            this.settings.emptyFilesExcludeRegex,
+            this.settings.emptyFiles.ignoreRegex,
         );
         const brokenLinkMatcher = this.createMatcher(
-            this.settings.brokenLinksExcludeRegex,
+            this.settings.brokenLinks.ignoreRegex,
         );
         const duplicateFileMatcher = this.createMatcher(
-            this.settings.duplicateFilesExcludeRegex,
+            this.settings.duplicateFiles.ignoreRegex,
+        );
+        const untaggedFileMatcher = this.createMatcher(
+            this.settings.untaggedFiles.ignoreRegex,
         );
 
         await Promise.all(
-            this.app.vault.getFiles().map(async (file) => {
-                const isMarkdownFile = file.name.endsWith(".md");
-                const content = isMarkdownFile // reading non-markdown blobs is *really* slow
-                    ? (await this.app.vault.cachedRead(file)).trim()
-                    : "";
-                const contentHash = content ? this.simpleHash(content) : 0;
+            this.app.vault
+                .getFiles()
+                .sort((a, b) => a.path.localeCompare(b.path))
+                .map(async (file) => {
+                    const isMarkdownFile = file.name.endsWith(".md");
+                    const content = isMarkdownFile // reading non-markdown blobs is *really* slow
+                        ? (await this.app.vault.cachedRead(file)).trim()
+                        : "";
+                    const contentHash = content ? this.simpleHash(content) : 0;
 
-                const isEmpty =
-                    (isMarkdownFile
-                        ? content.length === 0
-                        : file.stat.size === 0) && !emptyFileMatcher(file.path);
-                if (isEmpty) emptyFiles.push(file);
+                    const isEmpty =
+                        (isMarkdownFile
+                            ? content.length === 0
+                            : file.stat.size === 0) &&
+                        !emptyFileMatcher(file.path);
 
-                const isOrphaned =
-                    // @ts-ignore
-                    !this.app.metadataCache.getBacklinksForFile(file)?.data
-                        .size && !orphanedFileMatcher(file.path);
-                if (isOrphaned) orphanedFiles.push(file);
+                    if (isEmpty) emptyFiles.push(file);
 
-                if (!brokenLinkMatcher(file.path))
-                    Object.keys(
-                        this.app.metadataCache.unresolvedLinks[file.path] || {},
-                    ).forEach((link) =>
-                        brokenLinks.set(link, [
-                            ...(brokenLinks.get(link) || []),
+                    const metadata = this.app.metadataCache.getFileCache(file);
+                    const hasTags = (metadata?.tags || []).length > 0;
+                    const isUntagged =
+                        !hasTags && !untaggedFileMatcher(file.path);
+                    if (isUntagged) untaggedFiles.push(file);
+
+                    const hasProperties =
+                        Object.keys(metadata?.frontmatter || {}).length > 0;
+                    const hasBacklinks =
+                        // @ts-ignore
+                        this.app.metadataCache.getBacklinksForFile(file)?.data
+                            .size;
+
+                    const isOrphaned =
+                        !hasBacklinks &&
+                        (!this.settings.orphanedFiles.ignoreFilesWithTags ||
+                            !hasTags) &&
+                        (!this.settings.orphanedFiles
+                            .ignoreFilesWithProperties ||
+                            !hasProperties) &&
+                        !orphanedFileMatcher(file.path);
+                    if (isOrphaned) orphanedFiles.push(file);
+
+                    if (!brokenLinkMatcher(file.path))
+                        Object.keys(
+                            this.app.metadataCache.unresolvedLinks[file.path] ||
+                                {},
+                        ).forEach((link) =>
+                            brokenLinks.set(link, [
+                                ...(brokenLinks.get(link) || []),
+                                file,
+                            ]),
+                        );
+
+                    if (
+                        contentHash && // don't bother determining duplicates for files w/o content
+                        !duplicateFileMatcher(file.path)
+                    )
+                        duplicates.set(contentHash, [
+                            ...(duplicates.get(contentHash) || []),
                             file,
-                        ]),
-                    );
-
-                if (
-                    contentHash && // don't bother determining duplicates for files w/o content
-                    !duplicateFileMatcher(file.path)
-                )
-                    duplicates.set(contentHash, [
-                        ...(duplicates.get(contentHash) || []),
-                        file,
-                    ]);
-            }),
+                        ]);
+                }),
         );
         return {
             emptyFiles,
@@ -100,6 +128,7 @@ export default class CleanupPlugin extends Plugin {
             duplicates: Array.from(duplicates.values()).filter(
                 (d) => d.length > 1,
             ),
+            untaggedFiles,
         };
     }
 
@@ -114,6 +143,8 @@ export default class CleanupPlugin extends Plugin {
                 ),
         );
     }
+
+    debouncedRefresh = debounce(this.refreshPanels.bind(this), 1000);
 
     async activatePanel() {
         const leaves = this.app.workspace.getLeavesOfType(
@@ -176,6 +207,6 @@ export default class CleanupPlugin extends Plugin {
 
     async saveSettings() {
         await this.saveData(this.settings);
-        if (this.settings.autoRefresh) await this.refreshPanels();
+        if (this.settings.autoRefresh) this.debouncedRefresh();
     }
 }
