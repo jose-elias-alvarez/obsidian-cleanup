@@ -41,6 +41,45 @@ export default class CleanupPluginPanel extends ItemView {
         return container;
     }
 
+    private renderFileLinkList(el: Element, files: TFile[]) {
+        const list = el.createEl("ul");
+        files.forEach((file) => this.createFileLink(list.createEl("li"), file));
+    }
+
+    private renderBrokenLinksList(el: Element, links: Map<string, TFile[]>) {
+        const list = el.createEl("ul");
+        links.forEach((files, link) => {
+            const listItem = list.createEl("li");
+            listItem
+                .createEl("a", {
+                    text: link,
+                    cls: "cleanup-broken-link",
+                })
+                .addEventListener("click", (event) => {
+                    event.preventDefault();
+                    this.app.workspace.openLinkText(link, "");
+                });
+            const nestedList = listItem.createEl("ul");
+            files.forEach((file) =>
+                this.createFileLink(nestedList.createEl("li"), file),
+            );
+        });
+    }
+
+    private renderDuplicateFilesList(el: Element, duplicates: TFile[][]) {
+        const list = el.createEl("ul");
+        duplicates.forEach((group) => {
+            const listItem = list.createEl("li");
+            this.createFileLink(listItem, group[0]);
+            const nestedList = listItem.createEl("ul");
+            group
+                .slice(1)
+                .forEach((duplicate) =>
+                    this.createFileLink(nestedList.createEl("li"), duplicate),
+                );
+        });
+    }
+
     async onOpen() {
         const rootContainer = this.containerEl.children[1];
         rootContainer.empty();
@@ -78,102 +117,59 @@ export default class CleanupPluginPanel extends ItemView {
                     loadingText.remove();
                     refreshButton.setDisabled(false);
 
-                    if (this.plugin.settings.emptyFiles.enable) {
-                        container.createEl("h2", { text: "Empty files" });
-                        if (emptyFiles.length === 0) {
-                            container.createEl("p", {
-                                text: "No empty files found!",
+                    for (const { title, empty, render } of [
+                        {
+                            title: "Empty files",
+                            enabled: this.plugin.settings.emptyFiles.enable,
+                            empty: emptyFiles.length === 0,
+                            render: (section: HTMLDivElement) =>
+                                this.renderFileLinkList(section, emptyFiles),
+                        },
+                        {
+                            title: "Orphaned files",
+                            enabled: this.plugin.settings.orphanedFiles.enable,
+                            empty: orphanedFiles.length === 0,
+                            render: (section: HTMLDivElement) =>
+                                this.renderFileLinkList(section, orphanedFiles),
+                        },
+                        {
+                            title: "Broken links",
+                            enabled: this.plugin.settings.brokenLinks.enable,
+                            empty: brokenLinks.size === 0,
+                            render: (section: HTMLDivElement) =>
+                                this.renderBrokenLinksList(
+                                    section,
+                                    brokenLinks,
+                                ),
+                        },
+                        {
+                            title: "Duplicate files",
+                            enabled: this.plugin.settings.duplicateFiles.enable,
+                            empty: duplicates.length === 0,
+                            render: (section: HTMLDivElement) =>
+                                this.renderDuplicateFilesList(
+                                    section,
+                                    duplicates,
+                                ),
+                        },
+                        {
+                            title: "Untagged files",
+                            enabled: this.plugin.settings.untaggedFiles.enable,
+                            empty: untaggedFiles.length === 0,
+                            render: (section: HTMLDivElement) =>
+                                this.renderFileLinkList(section, untaggedFiles),
+                        },
+                    ].filter((section) => section.enabled)) {
+                        const section = container.createDiv({
+                            cls: "cleanup-section",
+                        });
+                        section.createEl("h2", { text: title });
+                        if (empty) {
+                            section.createEl("p", {
+                                text: `No ${title.toLowerCase()} found!`,
                             });
                         } else {
-                            const list = container.createEl("ul");
-                            emptyFiles.forEach((file) =>
-                                this.createFileLink(list.createEl("li"), file),
-                            );
-                        }
-                    }
-
-                    if (this.plugin.settings.orphanedFiles.enable) {
-                        container.createEl("h2", { text: "Orphaned  files" });
-                        if (orphanedFiles.length === 0) {
-                            container.createEl("p", {
-                                text: "No orphaned files found!",
-                            });
-                        } else {
-                            const list = container.createEl("ul");
-                            orphanedFiles.forEach((file) =>
-                                this.createFileLink(list.createEl("li"), file),
-                            );
-                        }
-                    }
-
-                    if (this.plugin.settings.brokenLinks.enable) {
-                        container.createEl("h2", { text: "Broken links" });
-                        if (brokenLinks.size === 0) {
-                            container.createEl("p", {
-                                text: "No broken links found!",
-                            });
-                        } else {
-                            const list = container.createEl("ul");
-                            brokenLinks.forEach((files, link) => {
-                                const listItem = list.createEl("li");
-                                listItem
-                                    .createEl("a", {
-                                        text: link,
-                                        cls: "cleanup-broken-link",
-                                    })
-                                    .addEventListener("click", (event) => {
-                                        event.preventDefault();
-                                        this.app.workspace.openLinkText(
-                                            link,
-                                            "",
-                                        );
-                                    });
-                                const nestedList = listItem.createEl("ul");
-                                files.forEach((file) =>
-                                    this.createFileLink(
-                                        nestedList.createEl("li"),
-                                        file,
-                                    ),
-                                );
-                            });
-                        }
-                    }
-
-                    if (this.plugin.settings.duplicateFiles.enable) {
-                        container.createEl("h2", { text: "Duplicate files" });
-                        if (!duplicates.length) {
-                            container.createEl("p", {
-                                text: "No duplicate files found!",
-                            });
-                        } else {
-                            const list = container.createEl("ul");
-                            duplicates.forEach((group) => {
-                                const listItem = list.createEl("li");
-                                this.createFileLink(listItem, group[0]);
-                                const nestedList = listItem.createEl("ul");
-                                group
-                                    .slice(1)
-                                    .forEach((duplicate) =>
-                                        this.createFileLink(
-                                            nestedList.createEl("li"),
-                                            duplicate,
-                                        ),
-                                    );
-                            });
-                        }
-                    }
-
-                    if (this.plugin.settings.untaggedFiles.enable) {
-                        container.createEl("h2", { text: "Untagged files" });
-                        if (!untaggedFiles.length) {
-                            container.createEl("p", {
-                                text: "No untagged files found!",
-                            });
-                        } else {
-                            const list = container.createEl("ul");
-                            untaggedFiles.forEach((file) =>
-                                this.createFileLink(list.createEl("li"), file),
-                            );
+                            render(section);
                         }
                     }
                 },

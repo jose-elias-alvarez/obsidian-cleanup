@@ -3,10 +3,6 @@
     padding: 2rem;
 }
 
-.cleanup-container h1 {
-    margin: 0.5rem 0;
-}
-
 .cleanup-heading-container {
     display: flex;
     justify-content: space-between;
@@ -19,6 +15,10 @@
 .cleanup-heading-container button:disabled:hover {
     color: inherit;
     background-color: inherit;
+}
+
+.cleanup-section {
+    margin: 1.5rem auto;
 }
 
 .cleanup-broken-link {
